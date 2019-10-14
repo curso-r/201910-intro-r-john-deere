@@ -161,9 +161,8 @@ A função `facet_grid()` permite combinar os níveis de duas variáveis.
 imdb %>%
   filter(classificacao %in% c("Livre", "A partir de 13 anos")) %>%
   mutate(ano_cat = ifelse(ano < 2000, "Antigos", "Recentes")) %>%
-  mutate(ano_class = paste(classificacao, ano_cat)) %>% 
   ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb, color = ano_class)) +
+  geom_point(aes(x = orcamento, y = nota_imdb)) +
   facet_grid(ano_cat ~ classificacao)
 ```
 
@@ -181,14 +180,6 @@ imdb %>%
 Vamos visualizar apenas os 10 diretores com mais filmes.
 
 ```{r}
-imdb %>% 
-  dplyr::count(diretor) %>% 
-  arrange(desc(n)) %>% 
-  filter(!is.na(diretor)) %>% 
-  dplyr::top_n(10, n) %>%
-  ggplot() +
-  geom_bar(aes(x = diretor, y = n), stat = "identity")
-
 imdb %>% 
   dplyr::count(diretor) %>% 
   arrange(desc(n)) %>% 
@@ -258,25 +249,8 @@ imdb %>%
   geom_bar(
     aes(x = diretor, y = n), 
     stat = "identity", 
-    color = "darkblue",
-    fill = "pink"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
-
-imdb %>% 
-  count(diretor) %>% 
-  arrange(desc(n)) %>% 
-  filter(!is.na(diretor)) %>% 
-  top_n(10, n) %>%
-  mutate(
-    diretor = fct_reorder(diretor, n)
-  ) %>% 
-  ggplot() +
-  geom_bar(
-    aes(x = diretor, y = n, fill = diretor), 
-    stat = "identity", 
-    color = "darkblue",
-    show.legend = FALSE
+    color = "orange",
+    fill = "purple"
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 ```
@@ -302,7 +276,7 @@ imdb %>%
   filter(n() >= 15) %>%
   ungroup() %>% 
   mutate(
-    diretor = fct_reorder(diretor, lucro, .fun = max, na.rm = TRUE)
+    diretor = fct_reorder(diretor, lucro, .fun = median, na.rm = TRUE)
   ) %>% 
   ggplot() +
   geom_boxplot(aes(x = diretor, y = lucro, fill = diretor)) +
@@ -436,7 +410,8 @@ E se quiséssemos utilizar as 3 colunas de atores?
 
 ```{r}
 imdb_atores <- imdb %>% 
-  gather(posicao, ator, ator_1, ator_2, ator_3) %>% 
+  gather(posicao, ator, ator_1, ator_2, ator_3)
+
 View(imdb_atores)
 ```
 
