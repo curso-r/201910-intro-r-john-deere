@@ -26,7 +26,6 @@ knitr::include_graphics("img/layers.png")
 
 ```{r}
 library(tidyverse)
-library(ggplot2)
 ```
 
 # Ler dados
@@ -51,7 +50,7 @@ Vamos acrescentar a reta y = x para visualizar a quantidade de filmes que não s
 ```{r}
 imdb %>%
   ggplot() +
-  geom_point(mapping = aes(x = orcamento, y = receita), colour = "purple") +
+  geom_point(mapping = aes(x = orcamento, y = receita)) +
   geom_abline(intercept = 0, slope = 1, color = "red")
 ```
 
@@ -144,7 +143,6 @@ imdb %>%
 
 
 
-
 Podemos usar `facets` para fazer um gráfico para cada nível de uma variável.
 
 ```{r}
@@ -198,7 +196,7 @@ imdb %>%
   filter(!is.na(diretor)) %>% 
   top_n(10, n) %>%
   ggplot() +
-  geom_bar(aes(x = diretor, y = n), stat = "identity") +
+  geom_col(aes(x = diretor, y = n)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 ```
 
@@ -213,8 +211,6 @@ O melhor pacote para tratar fatores é o `forcats`.
 - utilidade: funções para reordenar e renomear fatores de diversas formas
 
 - é especialmente útil para visualização
-
-- `fct_reorder`, `fct_infreq`, `fct_collapse`, `fct_lump`
 
 - são usados dentro de mutate()
 
@@ -249,8 +245,8 @@ imdb %>%
   geom_bar(
     aes(x = diretor, y = n), 
     stat = "identity", 
-    color = "orange",
-    fill = "purple"
+    color = "black",
+    fill = "lightblue"
   ) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 ```
@@ -532,7 +528,7 @@ imdb %>%
 ```
 
 
-2. Quantos filmes "são feitos por ano"?
+2. Faça um gráfico para visualizar quantos filmes "são feitos por ano"?
 
 ```{r}
 
