@@ -1,0 +1,115 @@
+---
+title: "Case"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(survival)
+library(survminer)
+library(leaflet)
+
+base_jd <- read_excel(
+  "../dados/DadosTreinamento_Shared.xlsx",
+  col_types = "text",
+  sheet = 2
+) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    part_cost = as.numeric(part_cost),
+    total_claim_cost = as.numeric(total_claim_cost),
+    machine_usage_hours = as.numeric(machine_usage_hours)
+  )
+
+base_jd_agg <- read_excel(
+  "../dados/DadosTreinamento_Shared.xlsx", 
+  col_types = "text",
+  sheet = 1
+) %>% 
+  janitor::clean_names() %>% 
+  mutate_at(
+    vars(contains("cost")),
+    ~as.numeric(.x)
+  )
+```
+
+Análise descritiva
+=======================================================================
+
+Column {data-width=550}
+-----------------------------------------------------------------------
+
+### Distribuição do número de horas até a falha
+
+```{r, fig.width=12, fig.height=5}
+
+```
+
+### Distribuição do número de horas até a falha para os equipamentos que mais falharam
+
+```{r, fig.width=12, fig.height=5}
+
+```
+
+Column {data-width=450 .tabset}
+-----------------------------------------------------------------------
+
+### 3 equipamentos que mais falharam
+
+```{r}
+
+```
+
+### Curva de sobrevivência
+
+```{r}
+
+```
+
+
+Base agregada
+=======================================================================
+
+Column {data-width=550}
+-----------------------------------------------------------------------
+
+### Série dos custos
+
+```{r, fig.width=12, fig.height=5}
+
+```
+
+
+### Custos
+
+```{r, fig.width=12, fig.height=5}
+
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Dados agregados
+
+```{r}
+
+```
+
+
+Mapa
+=======================================================================
+
+### Exemplo de mapa
+
+```{r}
+
+```
+

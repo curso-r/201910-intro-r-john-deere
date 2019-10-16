@@ -1,4 +1,6 @@
 library(tidyverse)
+library(survival)
+library(survminer)
 library(readxl)
 
 base_jd <- read_excel(
@@ -13,7 +15,16 @@ base_jd <- read_excel(
     machine_usage_hours = as.numeric(machine_usage_hours)
   )
 
-base_jd_agg <- read_excel("dados/DadosTreinamento_Shared.xlsx", sheet = 1)
+base_jd_agg <- read_excel(
+  "dados/DadosTreinamento_Shared.xlsx", 
+  col_types = "text",
+  sheet = 1
+) %>% 
+  janitor::clean_names() %>% 
+  mutate_at(
+    vars(contains("cost")),
+    ~as.numeric(.x)
+  )
 
 # Frequência de falhas por equipamento
 
@@ -58,7 +69,7 @@ base_jd %>%
   labs(x = "Equipamento", y = "Horas até a falha") +
   theme_minimal()
 
-# Distribuiçãao do número de horas até a falha para as peças dos 3 equipamentos que mais falharam
+# 3 equipamentos que mais falharam
 
 base_equip <- base_jd %>%
   group_by(pin_number) %>% 
@@ -90,3 +101,59 @@ base_jd %>%
     `Custo total` = custo
   )
 
+# Kaplan-meier do tempo até a falha por modelo
+
+base_jd <- base_jd %>% 
+  mutate(status = 1)
+
+fit <- survfit(Surv(machine_usage_hours, status) ~ model_5, data = base_jd)
+
+ggsurvplot(
+  fit, 
+  data = base_jd,
+  conf.int = TRUE,
+  legend.labs = c("Modelo 1", "Modelo 2", "Modelo 3")
+)
+
+# Tabela agregada
+
+base_jd %>% 
+  mutate(
+    factory_build_month = str_pad(factory_build_month, 2, "left", "0"),
+    month = paste0(factory_build_year, factory_build_month)
+  ) %>% 
+  group_by(month) %>% 
+  summarise(
+    `Sample Size` = n_distinct(pin_number),
+    `Event Count` = n(),
+    `Part Cost` = sum(part_cost),
+    `Total Cost` = sum(total_claim_cost)
+  ) %>% 
+  mutate_at(
+    vars(contains("Cost")), ~scales::dollar(.x)
+  ) %>% 
+  rename(`Factory Fiscal Build Month` = month)
+
+
+# Série do custo total
+
+base_jd_agg %>% 
+  mutate(
+    ano = str_sub(factory_fiscal_build_month, 1, 4),
+    mes = str_sub(factory_fiscal_build_month, 5, 6),
+    data = paste("01", mes, ano, sep = "/"),
+    data = lubridate::dmy(data)
+  ) %>%
+  ggplot(aes(x = data, y = total_cost)) +
+  geom_line() +
+  theme_minimal()
+
+# Custos agregados por mês
+
+base_jd_agg %>% 
+  mutate(factory_fiscal_build_month = as.character(factory_fiscal_build_month)) %>% 
+  gather(custo, valor, contains("cost")) %>% 
+  filter(custo != "total_cost") %>% 
+  ggplot(aes(x = factory_fiscal_build_month, y = valor, fill = custo)) +
+  geom_col() +
+  theme_minimal()
