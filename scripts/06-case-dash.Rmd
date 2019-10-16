@@ -1,5 +1,5 @@
 ---
-title: "John-Deere"
+title: "Case"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -13,6 +13,9 @@ library(flexdashboard)
 ```{r}
 library(tidyverse)
 library(readxl)
+library(survival)
+library(survminer)
+library(leaflet)
 
 base_jd <- read_excel(
   "../dados/DadosTreinamento_Shared.xlsx",
@@ -25,8 +28,21 @@ base_jd <- read_excel(
     total_claim_cost = as.numeric(total_claim_cost),
     machine_usage_hours = as.numeric(machine_usage_hours)
   )
+
+base_jd_agg <- read_excel(
+  "../dados/DadosTreinamento_Shared.xlsx", 
+  col_types = "text",
+  sheet = 1
+) %>% 
+  janitor::clean_names() %>% 
+  mutate_at(
+    vars(contains("cost")),
+    ~as.numeric(.x)
+  )
 ```
 
+Análise descritiva
+=======================================================================
 
 Column {data-width=550}
 -----------------------------------------------------------------------
@@ -62,10 +78,10 @@ base_jd %>%
   theme_minimal()
 ```
 
-Column {data-width=450}
+Column {data-width=450 .tabset}
 -----------------------------------------------------------------------
 
-### Distribuiçãao do número de horas até a falha para as peças dos 3 equipamentos que mais falharam
+### 3 equipamentos que mais falharam
 
 ```{r}
 base_equip <- base_jd %>%
@@ -98,5 +114,98 @@ base_jd %>%
     `Custo total` = custo
   ) %>% 
   knitr::kable()
+```
+
+### Curva de sobrevivência
+
+```{r}
+base_jd <- base_jd %>% 
+  mutate(status = 1)
+
+fit <- survfit(Surv(machine_usage_hours, status) ~ model_5, data = base_jd)
+
+ggsurvplot(
+  fit, 
+  data = base_jd,
+  conf.int = TRUE,
+  legend.labs = c("Modelo 1", "Modelo 2", "Modelo 3")
+)
+```
+
+
+Base agregada
+=======================================================================
+
+Column {data-width=550}
+-----------------------------------------------------------------------
+
+### Série dos custos
+
+```{r, fig.width=12, fig.height=5}
+base_jd_agg %>% 
+  mutate(
+    ano = str_sub(factory_fiscal_build_month, 1, 4),
+    mes = str_sub(factory_fiscal_build_month, 5, 6),
+    data = paste("01", mes, ano, sep = "/"),
+    data = lubridate::dmy(data)
+  ) %>%
+  ggplot(aes(x = data, y = total_cost)) +
+  geom_line() +
+  theme_minimal()
+```
+
+
+### Custos
+
+```{r, fig.width=12, fig.height=5}
+base_jd_agg %>% 
+  mutate(factory_fiscal_build_month = as.character(factory_fiscal_build_month)) %>% 
+  gather(custo, valor, contains("cost")) %>% 
+  filter(custo != "total_cost") %>% 
+  ggplot(aes(x = factory_fiscal_build_month, y = valor, fill = custo)) +
+  geom_col() +
+  theme_minimal()
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Dados agregados
+
+```{r}
+base_jd %>% 
+  mutate(
+    factory_build_month = str_pad(factory_build_month, 2, "left", "0"),
+    month = paste0(factory_build_year, factory_build_month)
+  ) %>% 
+  group_by(month) %>% 
+  summarise(
+    `Sample Size` = n_distinct(pin_number),
+    `Event Count` = n(),
+    `Part Cost` = sum(part_cost),
+    `Total Cost` = sum(total_claim_cost)
+  ) %>% 
+  mutate_at(
+    vars(contains("Cost")), ~scales::dollar(.x)
+  ) %>% 
+  rename(`Factory Fiscal Build Month` = month) %>% 
+  knitr::kable()
+```
+
+
+Mapa
+=======================================================================
+
+### Exemplo de mapa
+
+```{r}
+base_mapa <- read_rds("../dados/ex_mapa.rds")
+
+base_mapa %>% 
+  filter(estado_provincia == "Rio Grande do Sul") %>%
+  select(localidade_especifica, longitude, latitude) %>%
+  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lng = ~longitude, lat = ~latitude, popup = ~localidade_especifica)
 ```
 
